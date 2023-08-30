@@ -20,5 +20,9 @@ test:	compile
 	@echo stack.test
 	${CLASSDIR}/bin/spim -file stack.s < stack.test
 
+spim: compile
+	@echo stack.test
+	${CLASSDIR}/bin/spim -file stack.s
+
 clean :
 	rm -f *.s core *~
