@@ -139,15 +139,21 @@
     %type <features> feature_list
     %type <formal> formal
     %type <formals> formal_list
-    %type <expression> expression
+    %type <expression> expression partial_let
     %type <expressions> expression_list_dispatch expression_list_block
-    %type <case_> case
     %type <cases> case_list
 
     
     /* Precedence declarations go here. */
+    %nonassoc IN
     %right ASSIGN
+    %left NOT
+    %nonassoc LE '<' '='
     %left '+' '-'
+    %left '*' '/'
+    %left ISVOID
+    %left '~'
+    %left '@'
     %left '.'
     
     
@@ -210,6 +216,18 @@
     | expression_list_block expression ';' { $$ = append_Expressions($1, single_Expressions($2)); }
     ;
 
+    partial_let
+    : OBJECTID ':' TYPEID IN expression { $$ = let($1, $3, no_expr(), $5); }
+    | OBJECTID ':' TYPEID ASSIGN expression IN expression { $$ = let($1, $3, $5, $7); }
+    | OBJECTID ':' TYPEID ',' partial_let { $$ = let($1, $3, no_expr(), $5); }
+    | OBJECTID ':' TYPEID ASSIGN expression ',' partial_let { $$ = let($1, $3, $5, $7); }
+    ;
+
+    case_list
+    : OBJECTID ':' TYPEID DARROW expression ';' ESAC { $$ = single_Cases(branch($1, $3, $5)); }
+    | OBJECTID ':' TYPEID DARROW expression ';' case_list { $$ = append_Cases(single_Cases(branch($1, $3, $5)), $7); }
+    ;
+
     expression
     : BOOL_CONST { $$ = bool_const($1); }
     | INT_CONST { $$ = int_const($1); }
@@ -217,13 +235,30 @@
     | OBJECTID { $$ = object($1); }
     | expression '.' OBJECTID '(' expression_list_dispatch ')' { $$ = dispatch($1, $3, $5); }
     | expression '.' OBJECTID '(' ')' { $$ = dispatch($1, $3, nil_Expressions()); }
+    | expression '@' TYPEID '.' OBJECTID '(' ')' { $$ = static_dispatch($1, $3, $5, nil_Expressions()); }
+    | expression '@' TYPEID '.' OBJECTID '(' expression_list_dispatch ')' { $$ = static_dispatch($1, $3, $5, $7); }
     | OBJECTID '(' expression_list_dispatch ')' { $$ = dispatch(object(idtable.add_string("self")), $1, $3); }
     | OBJECTID '(' ')' { $$ = dispatch(object(idtable.add_string("self")), $1, nil_Expressions()); }
+    | NEW TYPEID { $$ = new_($2); }
+    | ISVOID expression { $$ = isvoid($2); }
     | expression '+' expression { $$ = plus($1, $3); }
     | expression '-' expression { $$ = sub($1, $3); }
+    | expression '*' expression { $$ = mul($1, $3); }
+    | expression '/' expression { $$ = divide($1, $3); }
+    | '~' expression { $$ = neg($2); }
+    | expression '<' expression { $$ = lt($1, $3); }
+    | expression LE expression { $$ = leq($1, $3); }
+    | expression '=' expression { $$ = eq($1, $3); }
+    | NOT expression { $$ = comp($2); }
     | '{' expression_list_block '}' { $$ = block($2); }
     | '(' expression ')' { $$ = $2; }
-    | OBJECTID ASSIGN expression { assign($1, $3); }
+    | OBJECTID ASSIGN expression { $$ = assign($1, $3); }
+    | IF expression THEN expression ELSE expression FI
+        { $$ = cond($2, $4, $6); }
+    | WHILE expression LOOP expression POOL
+        { $$ = loop($2, $4); }
+    | LET partial_let { $$ = $2; }
+    | CASE expression OF case_list { $$ = typcase($2, $4); }
     ;
 
     
