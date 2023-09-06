@@ -2,7 +2,7 @@
 ASSN = 3
 CLASS= cs143
 CLASSDIR= ../..
-LIB=  -lfl 
+LIB=
 AR= gar
 ARCHIVE_NEW= -cr
 RANLIB= gar -qs
@@ -23,7 +23,7 @@ OUTPUT= good.output bad.output
 
 CPPINCLUDE= -I. -I${CLASSDIR}/include/PA${ASSN} -I${CLASSDIR}/src/PA${ASSN}
 
-BFLAGS = -d -v -y -b cool --debug -p cool_yy
+BFLAGS = -d -v -y -b cool --debug -p cool_yy -Wcounterexamples
 
 CC=g++
 CFLAGS=-g -Wall -Wno-unused -Wno-deprecated  -Wno-write-strings -DDEBUG ${CPPINCLUDE}

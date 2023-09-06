@@ -135,9 +135,20 @@
     %type <class_> class
     
     /* You will want to change the following line. */
-    %type <features> dummy_feature_list
+    %type <feature> feature
+    %type <features> feature_list
+    %type <formal> formal
+    %type <formals> formal_list
+    %type <expression> expression
+    %type <expressions> expression_list_dispatch expression_list_block
+    %type <case_> case
+    %type <cases> case_list
+
     
     /* Precedence declarations go here. */
+    %right ASSIGN
+    %left '+' '-'
+    %left '.'
     
     
     %%
@@ -157,16 +168,64 @@
     ;
     
     /* If no parent is specified, the class inherits from the Object class. */
-    class	: CLASS TYPEID '{' dummy_feature_list '}' ';'
+    class	: CLASS TYPEID '{' feature_list '}' ';'
     { $$ = class_($2,idtable.add_string("Object"),$4,
     stringtable.add_string(curr_filename)); }
-    | CLASS TYPEID INHERITS TYPEID '{' dummy_feature_list '}' ';'
+    | CLASS TYPEID '{' '}' ';'   /* empty feature_list */
+    { $$ = class_($2,idtable.add_string("Object"),nil_Features(),
+    stringtable.add_string(curr_filename)); }
+    | CLASS TYPEID INHERITS TYPEID '{' feature_list '}' ';'
     { $$ = class_($2,$4,$6,stringtable.add_string(curr_filename)); }
+    | CLASS TYPEID INHERITS TYPEID '{'  '}' ';' /* empty feature_list */
+    { $$ = class_($2,$4,nil_Features(),stringtable.add_string(curr_filename)); }
     ;
     
     /* Feature list may be empty, but no empty features in list. */
-    dummy_feature_list:		/* empty */
-    {  $$ = nil_Features(); }
+    feature_list
+    : feature { $$ = single_Features($1); }
+    | feature_list feature { $$ = append_Features($1, single_Features($2)); }
+    ;
+
+    feature
+    : OBJECTID ':' TYPEID ';' { $$ = attr($1, $3, no_expr()); }
+    | OBJECTID ':' TYPEID ASSIGN expression ';' { $$ = attr($1, $3, $5); }
+    | OBJECTID '(' formal_list ')' ':' TYPEID '{' expression '}' ';' { $$ = method($1, $3, $6, $8); }
+    | OBJECTID '(' ')' ':' TYPEID '{' expression '}' ';' { $$ = method($1, nil_Formals(), $5, $7); }
+    ;
+
+    formal_list
+    : formal { $$ = single_Formals($1); }
+    | formal_list ',' formal { $$ = append_Formals($1, single_Formals($3)); }
+    ;
+
+    formal : OBJECTID ':' TYPEID { $$ = formal($1, $3); };
+
+    expression_list_dispatch
+    : expression { $$ = single_Expressions($1); }
+    | expression_list_dispatch ',' expression { $$ = append_Expressions($1, single_Expressions($3)); }
+    ;
+
+    expression_list_block
+    : expression ';' { $$ = single_Expressions($1); }
+    | expression_list_block expression ';' { $$ = append_Expressions($1, single_Expressions($2)); }
+    ;
+
+    expression
+    : BOOL_CONST { $$ = bool_const($1); }
+    | INT_CONST { $$ = int_const($1); }
+    | STR_CONST { $$ = string_const($1); }
+    | OBJECTID { $$ = object($1); }
+    | expression '.' OBJECTID '(' expression_list_dispatch ')' { $$ = dispatch($1, $3, $5); }
+    | expression '.' OBJECTID '(' ')' { $$ = dispatch($1, $3, nil_Expressions()); }
+    | OBJECTID '(' expression_list_dispatch ')' { $$ = dispatch(object(idtable.add_string("self")), $1, $3); }
+    | OBJECTID '(' ')' { $$ = dispatch(object(idtable.add_string("self")), $1, nil_Expressions()); }
+    | expression '+' expression { $$ = plus($1, $3); }
+    | expression '-' expression { $$ = sub($1, $3); }
+    | '{' expression_list_block '}' { $$ = block($2); }
+    | '(' expression ')' { $$ = $2; }
+    | OBJECTID ASSIGN expression { assign($1, $3); }
+    ;
+
     
     
     /* end of grammar */
