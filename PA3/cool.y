@@ -184,6 +184,10 @@
     { $$ = class_($2,$4,$6,stringtable.add_string(curr_filename)); }
     | CLASS TYPEID INHERITS TYPEID '{'  '}' ';' /* empty feature_list */
     { $$ = class_($2,$4,nil_Features(),stringtable.add_string(curr_filename)); }
+    | error '{' '}' {}
+    | error '{' feature_list '}' {}
+    | error '{' feature_list '}' ';' {}
+    | error '{' '}' ';' {}
     ;
     
     /* Feature list may be empty, but no empty features in list. */
@@ -197,6 +201,7 @@
     | OBJECTID ':' TYPEID ASSIGN expression ';' { $$ = attr($1, $3, $5); }
     | OBJECTID '(' formal_list ')' ':' TYPEID '{' expression '}' ';' { $$ = method($1, $3, $6, $8); }
     | OBJECTID '(' ')' ':' TYPEID '{' expression '}' ';' { $$ = method($1, nil_Formals(), $5, $7); }
+    | error {}
     ;
 
     formal_list
@@ -214,6 +219,7 @@
     expression_list_block
     : expression ';' { $$ = single_Expressions($1); }
     | expression_list_block expression ';' { $$ = append_Expressions($1, single_Expressions($2)); }
+    | error {}
     ;
 
     partial_let
@@ -221,11 +227,13 @@
     | OBJECTID ':' TYPEID ASSIGN expression IN expression { $$ = let($1, $3, $5, $7); }
     | OBJECTID ':' TYPEID ',' partial_let { $$ = let($1, $3, no_expr(), $5); }
     | OBJECTID ':' TYPEID ASSIGN expression ',' partial_let { $$ = let($1, $3, $5, $7); }
+    | error {}
     ;
 
     case_list
     : OBJECTID ':' TYPEID DARROW expression ';' ESAC { $$ = single_Cases(branch($1, $3, $5)); }
     | OBJECTID ':' TYPEID DARROW expression ';' case_list { $$ = append_Cases(single_Cases(branch($1, $3, $5)), $7); }
+    | error {}
     ;
 
     expression
