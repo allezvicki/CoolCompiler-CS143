@@ -201,7 +201,7 @@
     | OBJECTID ':' TYPEID ASSIGN expression ';' { $$ = attr($1, $3, $5); }
     | OBJECTID '(' formal_list ')' ':' TYPEID '{' expression '}' ';' { $$ = method($1, $3, $6, $8); }
     | OBJECTID '(' ')' ':' TYPEID '{' expression '}' ';' { $$ = method($1, nil_Formals(), $5, $7); }
-    | error {}
+    | error ';' {}
     ;
 
     formal_list
@@ -219,7 +219,7 @@
     expression_list_block
     : expression ';' { $$ = single_Expressions($1); }
     | expression_list_block expression ';' { $$ = append_Expressions($1, single_Expressions($2)); }
-    | error {}
+    | error ';' {}
     ;
 
     partial_let
@@ -227,13 +227,13 @@
     | OBJECTID ':' TYPEID ASSIGN expression IN expression { $$ = let($1, $3, $5, $7); }
     | OBJECTID ':' TYPEID ',' partial_let { $$ = let($1, $3, no_expr(), $5); }
     | OBJECTID ':' TYPEID ASSIGN expression ',' partial_let { $$ = let($1, $3, $5, $7); }
-    | error {}
+    | error ',' partial_let {}
     ;
 
     case_list
     : OBJECTID ':' TYPEID DARROW expression ';' ESAC { $$ = single_Cases(branch($1, $3, $5)); }
     | OBJECTID ':' TYPEID DARROW expression ';' case_list { $$ = append_Cases(single_Cases(branch($1, $3, $5)), $7); }
-    | error {}
+    | error ';' case_list {}
     ;
 
     expression
