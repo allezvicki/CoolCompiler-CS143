@@ -3,6 +3,11 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdarg.h>
+#include <unordered_map>
+#include <unordered_set>
+#include <vector>
+#include "cool-tree.h"
+#include "cool-tree.handcode.h"
 #include "semant.h"
 #include "utilities.h"
 
@@ -86,10 +91,81 @@ static void initialize_constants(void)
 ClassTable::ClassTable(Classes classes) : semant_errors(0) , error_stream(cerr) {
 
     /* Fill this in */
+    /* Build my class tree here! */
+
+    /* _class_root (Object_class) now with all the basic classes */
+    _class_root = install_basic_classes();
+
+    // Fist scan: add all the edges
+    //
+    // Second scan: build the tree from the edges, when building,
+    // test if all the edges form a valid tree (without cycles and
+    // unused edges)
+    
+    // parent -> children mapping
+    std::unordered_map<Symbol, std::vector<class__class*>> edges;
+
+    // Every class name can only appear once as a child
+    // vis should also prevent redefinition of basic classes
+    std::unordered_set<Symbol> vis;
+    vis.insert(Object);
+    vis.insert(Str);
+    vis.insert(Int);
+    vis.insert(Bool);
+    vis.insert(SELF_TYPE);
+
+    // Ensure all edges are valid (in tree) -- some edges may not be valid
+    // because parent is undefined
+    int tot_edges = 0;
+    int expected_edges = 0;
+
+    for(int i = classes->first(); classes->more(i); i = classes->next(i)) {
+        auto clss = dynamic_cast<class__class*>(classes->nth(i));
+        auto parent = clss->get_parent();
+        edges[parent].push_back(clss);
+        expected_edges++;
+        if (parent == Int || parent == Str || parent == Bool || parent == SELF_TYPE) {
+            semant_error(clss) << "cannot inherit from Int / Bool / Str / SELF_TYPE\n";
+        }
+    }
+
+    // Encountered cycle buiding inheritance graph
+    if(!_class_root->build(edges, vis, tot_edges)) {
+        semant_error() << "redefinition of classes\n";
+    }
+
+    if(tot_edges != expected_edges) {
+        semant_error() << "parent class undefined\n";
+    }
 
 }
 
-void ClassTable::install_basic_classes() {
+bool ClassNode::build(std::unordered_map<Symbol, std::vector<class__class*>>& edges, std::unordered_set<Symbol>& vis, int& tot) {
+    bool ret = true;
+    for(auto child_class : edges[dynamic_cast<class__class*>(_class)->get_name()]) {
+        // child appears twice, cycle detected
+        if (vis.find(child_class->get_name()) != vis.end()) {
+            return false;
+        }
+        vis.insert(child_class->get_name());
+        // ?????? I am so dead by the conversion...
+        // why don't you give me error??? I used explicit???
+        // Bug prone!
+        // to see
+        auto child_node = new ClassNode { child_class };
+        add_child(child_node);
+
+        if (semant_debug) {
+            cerr << "build edge: " << dynamic_cast<class__class*>(_class)->get_name() << " " << child_class->get_name() << endl;
+        }
+
+        tot++;
+        ret &= child_node->build(edges, vis, tot);
+    }
+    return ret;
+}
+
+ClassNode* ClassTable::install_basic_classes() {
 
     // The tree package uses these globals to annotate the classes built below.
    // curr_lineno  = 0;
@@ -188,6 +264,14 @@ void ClassTable::install_basic_classes() {
 						      Str, 
 						      no_expr()))),
 	       filename);
+
+    ClassNode* class_root = new ClassNode {Object_class};
+    class_root->add_child(new ClassNode {Str_class});
+    class_root->add_child(new ClassNode {Bool_class});
+    class_root->add_child(new ClassNode {Int_class});
+    class_root->add_child(new ClassNode {IO_class});
+
+    return class_root;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -223,6 +307,33 @@ ostream& ClassTable::semant_error()
 } 
 
 
+// ClassNode::
+
+void ClassNode::add_child(ClassNode* child) {
+    _children = new List<ClassNode>(child, _children);
+}
+
+// You really should think before you code...
+/* bool ClassNode::check_cycle() { */
+/*     if(_visited) { */
+/*         return true; */
+/*     } */
+/*     bool cycle = false; */
+/*     for(auto c = _children; c->hd(); c = c->tl()) { */
+/*         cycle |= c->hd()->check_cycle(); */
+/*     } */
+/*     return cycle; */
+/* } */
+
+/* bool ClassNode::visit() { */
+/*     if (_visited) { */
+/*         return true; */ 
+/*     } */
+/*     _visited = true; */
+/*     return false; */
+/* } */
+
+
 
 /*   This is the entry point to the semantic checker.
 
@@ -244,12 +355,21 @@ void program_class::semant()
     /* ClassTable constructor may do some semantic analysis */
     ClassTable *classtable = new ClassTable(classes);
 
+    // Now class tree (inheritance graph) is built
+    if (classtable->errors()) {
+        cerr << "Compilation halted due to static semantic errors." << endl;
+        exit(1);
+    }
+
     /* some semantic analysis code may go here */
 
     if (classtable->errors()) {
-	cerr << "Compilation halted due to static semantic errors." << endl;
-	exit(1);
+        cerr << "Compilation halted due to static semantic errors." << endl;
+        exit(1);
     }
+
+    /*dump_with_types() is done in semant-phase.cc */
+
 }
 
 

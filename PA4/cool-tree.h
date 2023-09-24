@@ -161,6 +161,9 @@ public:
    }
    Class_ copy_Class_();
    void dump(ostream& stream, int n);
+   // OK i'm gonna use dynamic_cast then what...
+   Symbol get_name() { return name; }
+   Symbol get_parent() { return parent; }
 
 #ifdef Class__SHARED_EXTRAS
    Class__SHARED_EXTRAS

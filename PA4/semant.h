@@ -3,6 +3,9 @@
 
 #include <assert.h>
 #include <iostream>  
+#include <unordered_map>
+#include <unordered_set>
+#include <vector>
 #include "cool-tree.h"
 #include "stringtab.h"
 #include "symtab.h"
@@ -10,6 +13,29 @@
 
 #define TRUE 1
 #define FALSE 0
+
+// This is node for the class inheritance tree. ClassNode is
+// essentially a wrapper around the AST _Class tree node.
+class ClassNode {
+private:
+    Class_ _class;
+    List<ClassNode>* _children;
+
+public:
+    explicit ClassNode(Class_ clss) : _class(clss), _children(NULL) {}
+
+    // add a child to parent
+    void add_child(ClassNode* child);
+
+    // build a tree using edges in the map
+    bool build(std::unordered_map<Symbol, std::vector<class__class*>>&, std::unordered_set<Symbol>&, int&);
+
+    /* // Returns true is cycle detected */
+    /* bool check_cycle(); */
+
+    /* // Returns true if already visited */
+    /* bool visit(); */
+};
 
 class ClassTable;
 typedef ClassTable *ClassTableP;
@@ -22,8 +48,9 @@ typedef ClassTable *ClassTableP;
 class ClassTable {
 private:
   int semant_errors;
-  void install_basic_classes();
+  ClassNode* install_basic_classes();
   ostream& error_stream;
+  ClassNode* _class_root {};
 
 public:
   ClassTable(Classes);
@@ -32,6 +59,7 @@ public:
   ostream& semant_error(Class_ c);
   ostream& semant_error(Symbol filename, tree_node *t);
 };
+
 
 
 #endif
