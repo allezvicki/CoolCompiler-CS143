@@ -46,49 +46,69 @@ typedef Cases_class *Cases;
 
 #define Program_EXTRAS                          \
 virtual void semant() = 0;			\
-virtual void dump_with_types(ostream&, int) = 0; 
+virtual void dump_with_types(ostream&, int) = 0;
 
 
 
 #define program_EXTRAS                          \
 void semant();     				\
-void dump_with_types(ostream&, int);            
+void dump_with_types(ostream&, int); \
+void recurse();
 
 #define Class__EXTRAS                   \
 virtual Symbol get_filename() = 0;      \
-virtual void dump_with_types(ostream&,int) = 0; 
+virtual void dump_with_types(ostream&,int) = 0; \
+virtual void recurse() = 0;
 
 
 #define class__EXTRAS                                 \
 Symbol get_filename() { return filename; }             \
-void dump_with_types(ostream&,int);                    
+void dump_with_types(ostream&,int); \
+void recurse();
 
 
 #define Feature_EXTRAS                                        \
-virtual void dump_with_types(ostream&,int) = 0; 
+virtual void dump_with_types(ostream&,int) = 0; \
+virtual void recurse() = 0; \
+virtual void check_feature(std::unordered_map<Symbol, std::vector<Symbol>> &mtds, \
+    std::unordered_set<Symbol> &attrs, std::vector<Method>& new_mtds, std::vector<Symbol>& new_attrs) = 0;
 
 
 #define Feature_SHARED_EXTRAS                                       \
-void dump_with_types(ostream&,int);    
+void dump_with_types(ostream&,int);    \
+void recurse(); \
+void check_feature(std::unordered_map<Symbol, std::vector<Symbol>> &mtds, \
+    std::unordered_set<Symbol> &attrs, std::vector<Method>& new_mtds, std::vector<Symbol>& new_attrs);
 
 
 
 
 
 #define Formal_EXTRAS                              \
-virtual void dump_with_types(ostream&,int) = 0;
+virtual void dump_with_types(ostream&,int) = 0; \
+virtual void recurse() = 0; \
+virtual void after_recurse() = 0; \
+virtual Symbol get_name() = 0;
 
 
 #define formal_EXTRAS                           \
-void dump_with_types(ostream&,int);
+void dump_with_types(ostream&,int); \
+void recurse(); \
+void after_recurse(); \
+Symbol get_type(); \
+Symbol get_name();
 
 
 #define Case_EXTRAS                             \
-virtual void dump_with_types(ostream& ,int) = 0;
+virtual void dump_with_types(ostream& ,int) = 0; \
+virtual Symbol recurse() = 0; \
+virtual Symbol get_casetype() = 0;
 
 
 #define branch_EXTRAS                                   \
-void dump_with_types(ostream& ,int);
+void dump_with_types(ostream& ,int); \
+Symbol recurse(); \
+Symbol get_casetype();
 
 
 #define Expression_EXTRAS                    \
@@ -97,9 +117,11 @@ Symbol get_type() { return type; }           \
 Expression set_type(Symbol s) { type = s; return this; } \
 virtual void dump_with_types(ostream&,int) = 0;  \
 void dump_type(ostream&, int);               \
-Expression_class() { type = (Symbol) NULL; }
+Expression_class() { type = (Symbol) NULL; } \
+virtual Symbol recurse() = 0;
 
 #define Expression_SHARED_EXTRAS           \
-void dump_with_types(ostream&,int); 
+void dump_with_types(ostream&,int);  \
+Symbol recurse();
 
 #endif

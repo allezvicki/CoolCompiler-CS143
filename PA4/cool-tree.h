@@ -11,7 +11,16 @@
 
 #include "tree.h"
 #include "cool-tree.handcode.h"
+#include <vector>
+#include <unordered_map>
+#include <unordered_set>
 
+// Have to move it here becuz this header file needs it
+struct Method {
+    Symbol name;
+    std::vector<Symbol> types;
+    Method(Symbol _name, std::vector<Symbol>&& _types) : name(_name), types(_types) {}
+};
 
 // define the class for phylum
 // define simple phylum - Program
@@ -164,6 +173,8 @@ public:
    // OK i'm gonna use dynamic_cast then what...
    Symbol get_name() { return name; }
    Symbol get_parent() { return parent; }
+   void check_features(std::unordered_map<Symbol, std::vector<Symbol>> &mtds,
+    std::unordered_set<Symbol> &attrs, std::vector<Method>& new_mtds, std::vector<Symbol>& new_attrs);
 
 #ifdef Class__SHARED_EXTRAS
    Class__SHARED_EXTRAS
